@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-contract OnlyOwner {
+contract Owner {
     address private _owner;
 
     constructor(address owner) {

@@ -5,29 +5,54 @@ import "./access/Owner.sol";
 
 contract MainManagement is Owner {
 
-    uint32 private newAssetPrice = 10_000;
+    uint256 private registrationPrice;
 
     mapping(address => bool) manufacturers;
     mapping(address => bool) approvals;
 
-    constructor() Owner(msg.sender){
-
+    constructor() Owner(msg.sender) {
+        registrationPrice = 10;
     }
 
-//    Should it be payable ? If yes, then use the approval method:
-//    Owner approve
+    function setRegisterPrice(uint256 newPrice) onlyOwner external {
+        registrationPrice = newPrice;
+        //todo event of new price
+    }
+
+    function getRegisterPrice() view public returns (uint256){
+        return registrationPrice;
+    }
+
     function approveForManufacturerRole(address to) onlyOwner external {
         approvals[to] = true;
-
-        emit Approval(to, tokenId);
+        //todo event of new approval
     }
 
     function redeemManufacturerRole() payable external {
-        //Check if approved
-        //Redeem payment and set manufacturer role
+        //Check if the sender may redeem the manufacturer role
+        require(approvals[msg.sender] == true, "Address must be approved");
+
+        //Check payment
+        require(msg.value >= registrationPrice, "Not enough ethereum sent");
+        uint256 toReturn = msg.value - registrationPrice;
+        if (toReturn > 0) {
+            msg.sender.transfer(toReturn);
+        }
+
         //remove approval
+        approvals[msg.sender] = false;
+
+        //todo event for new manufacturer role
     }
-}
 
+    function isManufacturer(address account) view external returns (bool) {
+        return manufacturers[account];
+    }
 
+    function withdrawToOwner( uint256 amount) external onlyOwner {
+        (bool sent, bytes memory data) = _getOwner().call{value : amount}("");
+        require(sent, "Failed to withdraw ETH to owner");
+
+        //todo Event for withdraw
+    }
 }
